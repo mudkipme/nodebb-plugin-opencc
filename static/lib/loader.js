@@ -16,6 +16,10 @@ $(window).on('action:app.load', function () {
     }
     require(['opencc'], function (opencc) {
       opencc.convertData(oldData, convertPaths, config.userLang, function (err, newData) {
+        if (typeof blockName !== 'string') {
+          blockName = newData;
+          newData = data;
+        }
         parseAndTranslate.call(app, template, blockName, newData, callback);
       });
     })
