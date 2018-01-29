@@ -1,0 +1,20 @@
+{
+    "library": "opencc.js",
+    "staticDirs": {
+        "static": "./static"
+    },
+    "scripts": [
+        "static/lib/opencc.js",
+        "static/lib/loader.js"
+    ],
+    "hooks": [
+        {
+            "hook": "filter:middleware.render",
+            "method": "render"
+        },
+        {
+            "hook": "filter:middleware.renderHeader",
+            "method": "renderHeaderFooter"
+        }
+    ]
+}
