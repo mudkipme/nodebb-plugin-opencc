@@ -2,12 +2,12 @@
 
 (function (factory) {
   function loadClient(language, namespace) {
-    return Promise.resolve(jQuery.getJSON(config.relative_path + '/plugin/nodebb-plugin-opencc/static/dictionary.json?' + config['cache-buster']));
+    return Promise.resolve(jQuery.getJSON(config.relative_path + '/plugins/nodebb-plugin-opencc/static/dictionary.json?' + config['cache-buster']));
   }
   if (typeof define === 'function' && define.amd) {
     // AMD. Register as a named module
-    define('opencc', [], function () {
-      return factory(loadClient);
+    define('opencc', ['lodash.getset'], function (lodash) {
+      return factory(loadClient, lodash);
     });
   } else if (typeof module === 'object' && module.exports) {
     // Node
@@ -16,10 +16,10 @@
         return Promise.resolve(require('../dictionary.json'));
       }
 
-      module.exports = factory(loadServer);
+      module.exports = factory(loadServer, require('./lodash'));
     }());
   }
-}(function (load) {
+}(function (load, _) {
 
   var dictionaries = null;
 
@@ -38,9 +38,10 @@
 
   var cachedDictionaries = {};
 
-  function getDictionary(name, options = {}) {
-    var { reverse } = options;
-    var cacheName = reverse ? `R_${name}` : name;
+  function getDictionary(name, options) {
+    options = options || {};
+    var reverse = options.reverse;
+    var cacheName = reverse ? ('R_' + name) : name;
     var dictionary = cachedDictionaries[cacheName];
 
     return dictionary || (cachedDictionaries[cacheName] = dictionaries[name].reduce(function (map, entry) {
@@ -81,14 +82,17 @@
   };
 
   function translate(text, dictionary) {
-    const maxLength = Object.keys(dictionary).reduce((maxLength, word) => Math.max(maxLength, word.length), 0);
-    const translated = [];
+    var maxLength = Object.keys(dictionary).reduce(function (maxLength, word) {
+      return Math.max(maxLength, word.length);
+    }, 0);
+    var translated = [];
 
-    for (let i = 0, { length } = text; i < length; i++) {
-      let found;
+    var found;
+    for (var i = 0, length = text.length; i < length; i++) {
+      found = 0;
 
-      for (let j = maxLength; j > 0; j--) {
-        const target = text.substr(i, j);
+      for (var j = maxLength; j > 0; j--) {
+        var target = text.substr(i, j);
 
         if (Object.hasOwnProperty.call(dictionary, target)) {
           i += j - 1;
@@ -104,8 +108,31 @@
     return translated.join('');
   }
 
+  function translatePath(data, newData, path) {
+    if (!Array.isArray(path)) {
+      path = [path];
+    }
+    if (path.length === 0) {
+      return data;
+    }
+    var item = _.get(data, path[0]);
+    var newItem = _.get(newData, path[0]);
+    if (path.length === 1) {
+      if (typeof item === 'string') {
+        _.set(data, path[0], newItem);
+      }
+      return data;
+    }
+    if (Array.isArray(item)) {
+      _.set(data, path[0], item.map(function (entry, index) {
+        return translatePath(entry, newItem[index], path.slice(1));
+      }));
+    }
+    return data;
+  }
+
   return {
-    convertData: function (data, userLang, callback) {
+    convertData: function (data, convertPaths, userLang, callback) {
       if (!userLang || !userLang.toLowerCase().match(/^zh-(hans|cn|sg|my|hant|tw|hk|mo)$/)) {
         return callback(null, data);
       } 
@@ -116,7 +143,11 @@
         } else {
           str = simplifiedToTraditional(str);
         }
-        callback(null, JSON.parse(str));
+        var newData = JSON.parse(str);
+        convertPaths.forEach(function (path) {
+          data = translatePath(data, newData, path);
+        });
+        callback(null, data);
       }).catch(function (err) {
         callback(err);
       });

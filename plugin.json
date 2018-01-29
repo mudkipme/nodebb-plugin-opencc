@@ -4,6 +4,7 @@
         "static": "./static"
     },
     "scripts": [
+        "static/lib/lodash.js",
         "static/lib/opencc.js",
         "static/lib/loader.js"
     ],
