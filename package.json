@@ -1,6 +1,6 @@
 {
   "name": "nodebb-plugin-opencc",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A NodeBB plugin to translate between Traditional and Simplified Chinese",
   "main": "opencc.js",
   "scripts": {

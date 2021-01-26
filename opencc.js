@@ -1,6 +1,6 @@
 const opencc = require('./static/lib/opencc');
-const _ = module.parent.require('lodash');
-const User = module.parent.require('./user');
+const _ = require.main.require('lodash');
+const User = require.main.require('./src/user');
 
 const convertPaths = [
     ['breadcrumbs', 'text'],
